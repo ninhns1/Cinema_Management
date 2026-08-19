@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { bookingApi } from "../../services/apiClient";
 import { PaymentModal } from "../../components/checkout/PaymentModal";
+import "./MyTickets.css";
 
 function formatDate(booking) {
   return `${String(booking.showDate).padStart(2, "0")}/${String(booking.showMonth).padStart(2, "0")}/${booking.showYear}`;
@@ -12,14 +13,17 @@ export function MyTicketsPage({ userId, onPaidSuccess }) {
   const [payingTicket, setPayingTicket] = useState(null);
 
   async function loadTickets() {
-    setLoading(true);
-    try {
+   setLoading(true);
+   try {
       const response = await bookingApi.get("/", { params: { userId } });
-      setTickets(response.data.items || []);
+      console.log("Booking API response:", response.data); // debug tạm
+      setTickets(response.data.items || response.data || []);
+    } catch (err) {
+      console.error("Load tickets failed:", err);
     } finally {
       setLoading(false);
     }
-  }
+   }
 
   useEffect(() => {
     loadTickets();
@@ -33,7 +37,7 @@ export function MyTicketsPage({ userId, onPaidSuccess }) {
   return (
     <section className="tickets-page">
       <div className="section-head">
-        <h2>Ve da dat</h2>
+        <h2>My Tickets</h2>
         <button type="button" className="slot-btn" onClick={loadTickets}>Refresh</button>
       </div>
 
@@ -45,8 +49,8 @@ export function MyTicketsPage({ userId, onPaidSuccess }) {
             <h3>{ticket.movieTitle}</h3>
             <p><strong>Ngay:</strong> {formatDate(ticket)}</p>
             <p><strong>Gio:</strong> {ticket.showtimeLabel}</p>
-            <p><strong>Cho ngoi:</strong> {ticket.seatIds.join(", ")}</p>
-            <p><strong>Gia ve:</strong> {ticket.totalAmount.toLocaleString("vi-VN")} VND</p>
+            <p><strong>Cho ngoi:</strong> {(ticket.seatIds || []).join(", ")}</p>
+            <p><strong>Gia ve:</strong> {(ticket.totalAmount ?? 0).toLocaleString("vi-VN")} VND</p>
             <p><strong>Trang thai:</strong> {ticket.paymentStatus === "PAID" ? "Da thanh toan" : "Chua thanh toan"}</p>
 
             {ticket.paymentStatus !== "PAID" ? (

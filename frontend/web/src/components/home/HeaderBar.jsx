@@ -2,7 +2,7 @@ export function HeaderBar({ currentPage, onNavigateHome, onNavigateTickets }) {
   return (
     <header className="header-bar">
       <button type="button" className="brand brand-btn" onClick={onNavigateHome}>
-        Hahaha
+        Kac
       </button>
       <div className="search-wrap">
         <input className="search-input" placeholder="Search movies" />
