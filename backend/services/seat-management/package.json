@@ -1,0 +1,17 @@
+{
+  "name": "@cinema/seat-management",
+  "version": "1.0.0",
+  "private": true,
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "node src/server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.21.2",
+    "ioredis": "^5.8.2",
+    "mongoose": "^8.18.0",
+    "socket.io": "^4.8.1"
+  }
+}

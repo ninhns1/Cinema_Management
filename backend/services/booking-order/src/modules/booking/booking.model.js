@@ -1,0 +1,34 @@
+const mongoose = require("mongoose");
+
+const BookingSchema = new mongoose.Schema(
+  {
+    bookingId: { type: String, required: true, unique: true, index: true },
+    userId: { type: String, required: true, index: true },
+    movieTitle: { type: String, required: true },
+    showtimeId: { type: String, required: true, index: true },
+    showtimeLabel: { type: String, required: true },
+    showDate: { type: Number, required: true },
+    showMonth: { type: Number, required: true },
+    showYear: { type: Number, required: true },
+    seatIds: { type: [String], required: true },
+    seatPrice: { type: Number, required: true },
+    totalAmount: { type: Number, required: true },
+    holdIds: { type: [String], default: [] },
+    bookingStatus: {
+      type: String,
+      enum: ["PENDING_PAYMENT", "BOOKED", "FAILED"],
+      default: "PENDING_PAYMENT",
+      index: true,
+    },
+    paymentStatus: {
+      type: String,
+      enum: ["UNPAID", "PAID"],
+      default: "UNPAID",
+      index: true,
+    },
+    paymentRef: { type: String, default: null },
+  },
+  { timestamps: true }
+);
+
+module.exports = mongoose.model("Booking", BookingSchema);
