@@ -93,6 +93,7 @@
 
 .tickets-page .tickets-list:empty::after {
   content: "Ban chua dat ve nao. Chon phim va suat chieu de bat dau.";
+    content: "Bạn chưa đặt vé nào. Hãy chọn phim và suất chiếu để bắt đầu.";
   display: block;
   padding: 56px 24px;
   text-align: center;

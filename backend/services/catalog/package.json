@@ -1,5 +1,5 @@
 {
-  "name": "@cinema/booking-order",
+  "name": "@cinema/catalog",
   "version": "1.0.0",
   "private": true,
   "main": "src/server.js",
@@ -7,7 +7,6 @@
     "dev": "node src/server.js"
   },
   "dependencies": {
-    "axios": "^1.11.0",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
     "express": "^4.21.2",

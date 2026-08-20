@@ -1,13 +1,14 @@
 const express = require("express");
-const { createBooking, payBooking, listBookings } = require("./booking.service");
+const { createBooking, payBooking, listBookings, getAdminStats } = require("./booking.service");
+const { requireAuth, requireAdmin } = require("../../middleware/auth");
 
 function createBookingRouter(env) {
   const router = express.Router();
+  router.use(requireAuth(env));
 
   router.post("/create", async (req, res) => {
     try {
       const {
-        userId,
         movieTitle,
         showtimeId,
         showtimeLabel,
@@ -20,7 +21,7 @@ function createBookingRouter(env) {
 
       const result = await createBooking({
         env,
-        userId,
+        userId: req.user.userId,
         movieTitle,
         showtimeId,
         showtimeLabel,
@@ -40,8 +41,8 @@ function createBookingRouter(env) {
 
   router.post("/pay", async (req, res) => {
     try {
-      const { bookingId, userId } = req.body;
-      const result = await payBooking({ env, bookingId, userId });
+      const { bookingId } = req.body;
+      const result = await payBooking({ env, bookingId, userId: req.user.userId });
       res.json(result);
     } catch (error) {
       const status = error.response?.status || 500;
@@ -51,9 +52,16 @@ function createBookingRouter(env) {
 
   router.get("/", async (req, res) => {
     try {
-      const { userId } = req.query;
-      const items = await listBookings({ userId });
+      const items = await listBookings({ userId: req.user.userId });
       res.json({ items });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  router.get("/admin/stats", requireAdmin(env), async (_req, res) => {
+    try {
+      res.json(await getAdminStats());
     } catch (error) {
       res.status(500).json({ error: error.message });
     }

@@ -2,7 +2,7 @@ export function ExploreEventsSection({ events }) {
   return (
     <section className="events-section">
       <div className="section-head">
-        <h2>Explore events</h2>
+        <h2>Khám phá sự kiện</h2>
       </div>
       <div className="event-row">
         {events.map((event, index) => (

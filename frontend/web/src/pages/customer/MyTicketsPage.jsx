@@ -16,10 +16,9 @@ export function MyTicketsPage({ userId, onPaidSuccess }) {
    setLoading(true);
    try {
       const response = await bookingApi.get("/", { params: { userId } });
-      console.log("Booking API response:", response.data); // debug tạm
       setTickets(response.data.items || response.data || []);
     } catch (err) {
-      console.error("Load tickets failed:", err);
+      console.error("Không thể tải vé:", err);
     } finally {
       setLoading(false);
     }
@@ -31,31 +30,31 @@ export function MyTicketsPage({ userId, onPaidSuccess }) {
 
   function handlePaid(booking) {
     setTickets((prev) => prev.map((item) => (item.bookingId === booking.bookingId ? booking : item)));
-    onPaidSuccess("Dat cho thanh cong");
+    onPaidSuccess("Đặt vé thành công");
   }
 
   return (
     <section className="tickets-page">
       <div className="section-head">
-        <h2>My Tickets</h2>
-        <button type="button" className="slot-btn" onClick={loadTickets}>Refresh</button>
+        <h2>Vé của tôi</h2>
+        <button type="button" className="slot-btn" onClick={loadTickets}>Làm mới</button>
       </div>
 
-      {loading ? <p className="muted">Dang tai...</p> : null}
+      {loading ? <p className="muted">Đang tải...</p> : null}
 
       <div className="tickets-list">
         {tickets.map((ticket) => (
           <article className="ticket-card" key={ticket.bookingId}>
             <h3>{ticket.movieTitle}</h3>
-            <p><strong>Ngay:</strong> {formatDate(ticket)}</p>
-            <p><strong>Gio:</strong> {ticket.showtimeLabel}</p>
-            <p><strong>Cho ngoi:</strong> {(ticket.seatIds || []).join(", ")}</p>
-            <p><strong>Gia ve:</strong> {(ticket.totalAmount ?? 0).toLocaleString("vi-VN")} VND</p>
-            <p><strong>Trang thai:</strong> {ticket.paymentStatus === "PAID" ? "Da thanh toan" : "Chua thanh toan"}</p>
+              <p><strong>Ngày:</strong> {formatDate(ticket)}</p>
+              <p><strong>Suất:</strong> {ticket.showtimeLabel}</p>
+              <p><strong>Ghế:</strong> {(ticket.seatIds || []).join(", ")}</p>
+              <p><strong>Giá vé:</strong> {(ticket.totalAmount ?? 0).toLocaleString("vi-VN")} VND</p>
+              <p><strong>Trạng thái:</strong> {ticket.paymentStatus === "PAID" ? "Đã thanh toán" : "Chưa thanh toán"}</p>
 
             {ticket.paymentStatus !== "PAID" ? (
               <button type="button" className="primary-btn full" onClick={() => setPayingTicket(ticket)}>
-                Thanh toan
+                  Thanh toán
               </button>
             ) : null}
           </article>

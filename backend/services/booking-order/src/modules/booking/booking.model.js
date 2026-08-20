@@ -14,6 +14,7 @@ const BookingSchema = new mongoose.Schema(
     seatPrice: { type: Number, required: true },
     totalAmount: { type: Number, required: true },
     holdIds: { type: [String], default: [] },
+    holdExpiresAt: { type: Date, default: null },
     bookingStatus: {
       type: String,
       enum: ["PENDING_PAYMENT", "BOOKED", "FAILED"],

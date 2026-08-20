@@ -8,4 +8,5 @@ module.exports = {
   seatServiceBaseUrl: process.env.SEAT_SERVICE_BASE_URL || "http://localhost:4001",
   paymentServiceBaseUrl:
     process.env.PAYMENT_SERVICE_BASE_URL || "http://localhost:4004",
+  jwtSecret: process.env.JWT_SECRET || "development-only-secret",
 };

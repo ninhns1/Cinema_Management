@@ -3,10 +3,10 @@ export function PopularMoviesSection({ movies, onBookNow }) {
     <section className="popular-section">
       <div className="section-head">
         <div>
-          <p className="section-kicker">CURATED FOR YOU</p>
-          <h2>Popular movies</h2>
+          <p className="section-kicker">GỢI Ý DÀNH CHO BẠN</p>
+          <h2>Phim nổi bật</h2>
         </div>
-        <span className="muted">{movies.length} movies</span>
+        <span className="muted">{movies.length} phim</span>
       </div>
 
       <div className="movie-row">
@@ -23,7 +23,7 @@ export function PopularMoviesSection({ movies, onBookNow }) {
               <p className="rating">{movie.rating}</p>
             </div>
             <button className="primary-btn full" onClick={() => onBookNow(movie)}>
-              Book now
+              Đặt vé
             </button>
           </article>
         ))}

@@ -18,51 +18,71 @@ async function createBooking({
   seatIds,
   seatPrice,
 }) {
+  if (!userId || !movieTitle || !showtimeId || !showtimeLabel) {
+    throw new Error("BOOKING_DETAILS_REQUIRED");
+  }
+
   if (!Array.isArray(seatIds) || seatIds.length === 0) {
     throw new Error("SEATS_REQUIRED");
   }
 
-  const bookingId = crypto.randomUUID();
-  const holdIds = [];
-
-  for (const seatId of seatIds) {
-    const hold = await axios.post(
-      `${env.seatServiceBaseUrl}/api/seats/hold`,
-      {
-        showtimeId,
-        seatId,
-        userId,
-      },
-      {
-        headers: {
-          "Idempotency-Key": buildIdempotencyKey({ bookingId, seatId, userId }),
-        },
-      }
-    );
-
-    holdIds.push(hold.data.holdId);
+  if (new Set(seatIds).size !== seatIds.length) {
+    throw new Error("DUPLICATE_SEATS");
   }
 
-  const totalAmount = seatIds.length * seatPrice;
+  if (!Number.isFinite(seatPrice) || seatPrice <= 0) {
+    throw new Error("INVALID_SEAT_PRICE");
+  }
 
-  const booking = await Booking.create({
-    bookingId,
-    userId,
-    movieTitle,
-    showtimeId,
-    showtimeLabel,
-    showDate,
-    showMonth,
-    showYear,
-    seatIds,
-    seatPrice,
-    totalAmount,
-    holdIds,
-    bookingStatus: "PENDING_PAYMENT",
-    paymentStatus: "UNPAID",
-  });
+  const bookingId = crypto.randomUUID();
+  const holdIds = [];
+  let holdExpiresAt = null;
 
-  return booking;
+  try {
+    for (const seatId of seatIds) {
+      const hold = await axios.post(
+        `${env.seatServiceBaseUrl}/api/seats/hold`,
+        { showtimeId, seatId, userId },
+        {
+          headers: {
+            "Idempotency-Key": buildIdempotencyKey({ bookingId, seatId, userId }),
+          },
+        }
+      );
+
+      holdIds.push(hold.data.holdId);
+      if (!holdExpiresAt || new Date(hold.data.expiresAt) < holdExpiresAt) {
+        holdExpiresAt = new Date(hold.data.expiresAt);
+      }
+    }
+
+    const booking = await Booking.create({
+      bookingId,
+      userId,
+      movieTitle,
+      showtimeId,
+      showtimeLabel,
+      showDate,
+      showMonth,
+      showYear,
+      seatIds,
+      seatPrice,
+      totalAmount: seatIds.length * seatPrice,
+      holdIds,
+      holdExpiresAt,
+      bookingStatus: "PENDING_PAYMENT",
+      paymentStatus: "UNPAID",
+    });
+
+    return booking;
+  } catch (error) {
+    await Promise.allSettled(
+      holdIds.map((holdId) =>
+        axios.post(`${env.seatServiceBaseUrl}/api/seats/release`, { holdId, userId })
+      )
+    );
+    throw error;
+  }
 }
 
 async function payBooking({ env, bookingId, userId }) {
@@ -106,4 +126,23 @@ async function listBookings({ userId }) {
   return Booking.find({ userId }).sort({ createdAt: -1 }).lean();
 }
 
-module.exports = { createBooking, payBooking, listBookings };
+async function getAdminStats() {
+  const [summary] = await Booking.aggregate([
+    {
+      $group: {
+        _id: null,
+        totalBookings: { $sum: 1 },
+        paidBookings: {
+          $sum: { $cond: [{ $eq: ["$paymentStatus", "PAID"] }, 1, 0] },
+        },
+        revenue: {
+          $sum: { $cond: [{ $eq: ["$paymentStatus", "PAID"] }, "$totalAmount", 0] },
+        },
+      },
+    },
+  ]);
+
+  return summary || { totalBookings: 0, paidBookings: 0, revenue: 0 };
+}
+
+module.exports = { createBooking, payBooking, listBookings, getAdminStats };

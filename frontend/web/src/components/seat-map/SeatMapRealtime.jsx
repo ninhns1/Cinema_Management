@@ -76,7 +76,7 @@ export function SeatMapRealtime({ showtimeId, userId, onHoldCreated }) {
 
   return (
     <section className="card">
-      <h3>So do ghe realtime</h3>
+      <h3>Sơ đồ ghế theo thời gian thực</h3>
       <div className="seats">
         {seats.map((seatId) => {
           const seat = seatStates[seatId];
