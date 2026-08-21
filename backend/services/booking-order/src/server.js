@@ -3,6 +3,7 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 const env = require("./config/env");
 const { createBookingRouter } = require("./modules/booking/booking.controller");
+const { createAuthRouter } = require("./modules/auth.controller");
 
 async function start() {
   await mongoose.connect(env.mongoUri);
@@ -12,6 +13,7 @@ async function start() {
   app.use(express.json());
 
   app.use("/health", (_req, res) => res.json({ status: "ok" }));
+  app.use("/api/auth", createAuthRouter());
   app.use("/api/bookings", createBookingRouter(env));
 
   app.listen(env.port, () => {

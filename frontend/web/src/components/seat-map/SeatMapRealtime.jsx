@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { io } from "socket.io-client";
-import { seatApi } from "../../services/apiClient";
+import { seatApi } from "../../services/apiClientFixed";
 
 const socket = io("http://localhost:4001");
 
@@ -69,7 +69,7 @@ export function SeatMapRealtime({ showtimeId, userId, onHoldCreated }) {
         headers: {
           "Idempotency-Key": `${showtimeId}-${seatId}-${userId}`,
         },
-      }
+      },
     );
     onHoldCreated(response.data);
   }
