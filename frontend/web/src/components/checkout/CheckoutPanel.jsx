@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { bookingApi } from "../../services/apiClient";
+import { bookingApi } from "../../services/apiClientFixed";
 import { HoldCountdown } from "./HoldCountdown";
 
 export function CheckoutPanel({ hold, userId }) {

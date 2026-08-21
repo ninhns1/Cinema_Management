@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { bookingApi, seatApi } from "../../services/apiClient";
+import { bookingApi, seatApi } from "../../services/apiClientFixed";
 import { seatSocket } from "../../services/seatRealtime";
 import { SeatPickerGrid } from "../seat-map/SeatPickerGrid";
 import { SeatGridSkeleton } from "../seat-map/SeatGridSkeleton";
@@ -153,11 +153,16 @@ export function BookingModal({ movie, userId, onClose, onPaymentSuccess }) {
       setPendingBooking(response.data);
     } catch (apiError) {
       if (!apiError.response) {
-        setError("Không thể kết nối dịch vụ đặt vé. Hãy khởi động backend rồi thử lại.");
+        setError(
+          "Cannot connect to booking services. Please start backend services and try again.",
+        );
       } else if (apiError.response.data?.error?.error) {
         setError(apiError.response.data.error.error);
       } else {
-        setError(apiError.response.data?.error || "Ghế không còn trống. Vui lòng chọn ghế khác.");
+        setError(
+          apiError.response.data?.error ||
+            "Seat is no longer available. Please choose another one.",
+        );
       }
     } finally {
       setSubmitting(false);
@@ -165,7 +170,7 @@ export function BookingModal({ movie, userId, onClose, onPaymentSuccess }) {
   }
 
   function handlePaid(_booking) {
-    onPaymentSuccess("Đặt vé thành công");
+    onPaymentSuccess("Dat cho thanh cong");
     setSelectedSeats([]);
     setPendingBooking(null);
     onClose();
@@ -174,17 +179,25 @@ export function BookingModal({ movie, userId, onClose, onPaymentSuccess }) {
   const estimatedTotal = selectedSeats.length * 120000;
 
   return (
-    <div className="modal-backdrop" role="dialog" aria-modal="true" onClick={onClose}>
-      <div className="booking-modal" onClick={(event) => event.stopPropagation()}>
+    <div
+      className="modal-backdrop"
+      role="dialog"
+      aria-modal="true"
+      onClick={onClose}
+    >
+      <div
+        className="booking-modal"
+        onClick={(event) => event.stopPropagation()}
+      >
         <button type="button" className="close-btn" onClick={onClose}>
           x
         </button>
 
-        <p className="section-kicker">ĐẶT VÉ</p>
+        <p className="section-kicker">Book tickets</p>
         <h2>{movie.title}</h2>
 
         <div className="slot-wrap">
-          <h3>Chọn suất chiếu</h3>
+          <h3>Select showtime</h3>
           <div className="slot-row">
             {showtimeSlots.map((slot) => (
               <button
@@ -199,7 +212,7 @@ export function BookingModal({ movie, userId, onClose, onPaymentSuccess }) {
           </div>
         </div>
 
-        <h3>Chọn ghế ({selectedSeats.length} ghế đã chọn)</h3>
+        <h3>Select seats ({selectedSeats.length} selected)</h3>
         {loadingSeats ? (
           <SeatGridSkeleton />
         ) : (
@@ -212,17 +225,25 @@ export function BookingModal({ movie, userId, onClose, onPaymentSuccess }) {
         )}
 
         <div className="seat-legend">
-          <span><i className="legend-dot available" /> Còn trống</span>
-          <span><i className="legend-dot selected" /> Đang chọn</span>
-          <span><i className="legend-dot held" /> Đang giữ</span>
-          <span><i className="legend-dot booked" /> Đã đặt</span>
+          <span>
+            <i className="legend-dot available" /> Available
+          </span>
+          <span>
+            <i className="legend-dot selected" /> Selected
+          </span>
+          <span>
+            <i className="legend-dot held" /> Held
+          </span>
+          <span>
+            <i className="legend-dot booked" /> Booked
+          </span>
         </div>
 
         {error ? <p className="error-text">{error}</p> : null}
 
         <div className="booking-footer">
           <div>
-            <p className="muted">Tạm tính</p>
+            <p className="muted">Estimated total</p>
             <h3>{estimatedTotal.toLocaleString("vi-VN")} VND</h3>
           </div>
           <button
@@ -231,7 +252,7 @@ export function BookingModal({ movie, userId, onClose, onPaymentSuccess }) {
             disabled={!selectedSeats.length || submitting}
             onClick={confirmBooking}
           >
-            {submitting ? "Đang xử lý..." : "Xác nhận đặt vé"}
+            {submitting ? "Processing..." : "Confirm booking"}
           </button>
         </div>
       </div>
