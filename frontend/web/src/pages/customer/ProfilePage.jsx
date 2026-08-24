@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { authApi, setAuthSession } from "../../services/apiClientFixed";
+import { authApi, getAccessToken, setAuthSession } from "../../services/apiClientFixed";
 
 function getInitials(name) {
   return (name || "U")
@@ -8,6 +8,27 @@ function getInitials(name) {
     .slice(0, 2)
     .map((part) => part[0].toUpperCase())
     .join("");
+}
+
+function resizeImage(file) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    const reader = new FileReader();
+    reader.onload = () => {
+      image.onload = () => {
+        const scale = Math.min(1, 320 / Math.max(image.width, image.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(image.width * scale));
+        canvas.height = Math.max(1, Math.round(image.height * scale));
+        canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/webp", 0.82));
+      };
+      image.onerror = reject;
+      image.src = reader.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
 
 export function ProfilePage({ user, onUserUpdated, onNavigateTickets }) {
@@ -22,6 +43,32 @@ export function ProfilePage({ user, onUserUpdated, onNavigateTickets }) {
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [passwordError, setPasswordError] = useState("");
   const [passwordSuccess, setPasswordSuccess] = useState("");
+  const [avatarLoading, setAvatarLoading] = useState(false);
+  const [avatarError, setAvatarError] = useState("");
+
+  async function changeAvatar(event) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setAvatarError("Vui lòng chọn một tệp hình ảnh.");
+      return;
+    }
+
+    setAvatarError("");
+    setAvatarLoading(true);
+    try {
+      const avatarUrl = await resizeImage(file);
+      const response = await authApi.patch("/me/avatar", { avatarUrl });
+      setAuthSession(response.data.user, response.data.accessToken || getAccessToken());
+      setProfile(response.data.user);
+      onUserUpdated?.(response.data.user);
+    } catch (_error) {
+      setAvatarError("Không thể cập nhật ảnh đại diện. Vui lòng thử lại.");
+    } finally {
+      setAvatarLoading(false);
+    }
+  }
 
   useEffect(() => {
     let mounted = true;
@@ -105,10 +152,19 @@ export function ProfilePage({ user, onUserUpdated, onNavigateTickets }) {
       {currentUser ? (
         <div className="profile-layout">
           <section className="profile-identity">
-            <div className="profile-avatar" aria-hidden="true">
-              {getInitials(currentUser.fullName)}
+            <div className="profile-avatar">
+              {currentUser.avatarUrl ? (
+                <img src={currentUser.avatarUrl} alt={`Ảnh đại diện của ${currentUser.name || currentUser.fullName}`} />
+              ) : (
+                getInitials(currentUser.name || currentUser.fullName)
+              )}
             </div>
-            <h2>{currentUser.fullName}</h2>
+            <label className="avatar-upload-btn">
+              {avatarLoading ? "Đang tải..." : "Thay đổi ảnh đại diện"}
+              <input type="file" accept="image/png,image/jpeg,image/webp" onChange={changeAvatar} disabled={avatarLoading} />
+            </label>
+            {avatarError ? <p className="error-text">{avatarError}</p> : null}
+            <h2>{currentUser.name || currentUser.fullName}</h2>
             <p className="muted">{currentUser.email}</p>
             <span className="profile-role">{currentUser.role === "ADMIN" ? "Administrator" : "Customer"}</span>
           </section>

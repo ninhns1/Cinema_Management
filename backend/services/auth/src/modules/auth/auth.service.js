@@ -9,6 +9,7 @@ function publicUser(user) {
     name: user.name,
     email: user.email,
     role: user.role,
+    avatarUrl: user.avatarUrl || "",
   };
 }
 
@@ -61,8 +62,26 @@ async function ensureAdmin(env) {
   });
 }
 
+async function updateAvatar({ token, avatarUrl, env }) {
+  const payload = verifyToken(token, env);
+  if (typeof avatarUrl !== "string" || avatarUrl.length > 700000) {
+    throw new Error("AVATAR_INVALID");
+  }
+  if (avatarUrl && !/^data:image\/(jpeg|png|webp);base64,/.test(avatarUrl)) {
+    throw new Error("AVATAR_INVALID");
+  }
+
+  const user = await User.findOneAndUpdate(
+    { userId: payload.userId },
+    { avatarUrl },
+    { new: true },
+  );
+  if (!user) throw new Error("USER_NOT_FOUND");
+  return { user: publicUser(user), accessToken: issueToken(user, env) };
+}
+
 function verifyToken(token, env) {
   return jwt.verify(token, env.jwtSecret);
 }
 
-module.exports = { register, login, verifyToken, ensureAdmin };
+module.exports = { register, login, verifyToken, ensureAdmin, updateAvatar };

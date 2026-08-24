@@ -1,5 +1,5 @@
 const express = require("express");
-const { register, login, verifyToken } = require("./auth.service");
+const { register, login, verifyToken, updateAvatar } = require("./auth.service");
 
 function createAuthRouter(env) {
   const router = express.Router();
@@ -33,6 +33,20 @@ function createAuthRouter(env) {
       return res.json({ user });
     } catch (_error) {
       return res.status(401).json({ error: "INVALID_TOKEN" });
+    }
+  });
+
+  router.patch("/me/avatar", async (req, res) => {
+    const authorization = req.headers.authorization || "";
+    const token = authorization.startsWith("Bearer ") ? authorization.slice(7) : "";
+    if (!token) return res.status(401).json({ error: "TOKEN_REQUIRED" });
+
+    try {
+      const result = await updateAvatar({ token, avatarUrl: req.body.avatarUrl, env });
+      return res.json(result);
+    } catch (error) {
+      const status = ["TOKEN_INVALID", "USER_NOT_FOUND"].includes(error.message) ? 401 : 400;
+      return res.status(status).json({ error: error.message });
     }
   });
 
