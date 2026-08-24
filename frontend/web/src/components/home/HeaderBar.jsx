@@ -3,6 +3,7 @@ export function HeaderBar({
   authUser,
   onNavigateHome,
   onNavigateTickets,
+  onNavigateProfile,
   onOpenAuth,
   onLogout,
 }) {
@@ -29,6 +30,15 @@ export function HeaderBar({
         >
           My tickets
         </button>
+        {authUser ? (
+          <button
+            type="button"
+            className={`nav-link ${currentPage === "profile" ? "active" : ""}`}
+            onClick={onNavigateProfile}
+          >
+            Profile
+          </button>
+        ) : null}
 
         {authUser ? (
           <>

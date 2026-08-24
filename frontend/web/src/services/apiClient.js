@@ -45,6 +45,10 @@ export const bookingApi = axios.create({
   baseURL: "http://localhost:4003/api/bookings",
 });
 
+export const catalogApi = axios.create({
+  baseURL: "http://localhost:4006/api/catalog",
+});
+
 // Attach access token
 bookingApi.interceptors.request.use((config) => {
   const token = getAccessToken();

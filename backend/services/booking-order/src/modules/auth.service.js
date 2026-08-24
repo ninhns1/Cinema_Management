@@ -146,6 +146,44 @@ async function loginUser({ email, password }) {
   };
 }
 
+async function changePassword({ userId, currentPassword, newPassword }) {
+  if (!currentPassword || !newPassword) {
+    const error = new Error("Current password and new password are required.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const trimmedPassword = String(newPassword).trim();
+  if (trimmedPassword.length < 6) {
+    const error = new Error("Password must be at least 6 characters long.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (String(currentPassword) === trimmedPassword) {
+    const error = new Error("New password must be different from the current password.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const user = await User.findById(userId);
+  if (!user) {
+    const error = new Error("User not found.");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  if (!(await bcrypt.compare(String(currentPassword), user.passwordHash))) {
+    const error = new Error("Current password is incorrect.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  user.passwordHash = await bcrypt.hash(trimmedPassword, 12);
+  await user.save();
+  return { user: sanitizeUser(user), accessToken: createAccessToken(user) };
+}
+
 async function refreshTokens({ refreshToken }) {
   const record = await verifyRefreshToken(refreshToken);
   // rotate: revoke old and create new
@@ -169,6 +207,7 @@ function verifyToken(token) {
 module.exports = {
   registerUser,
   loginUser,
+  changePassword,
   refreshTokens,
   revokeRefreshToken,
   sanitizeUser,
