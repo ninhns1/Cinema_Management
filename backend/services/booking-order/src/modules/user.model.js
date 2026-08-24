@@ -13,6 +13,7 @@ const UserSchema = new mongoose.Schema(
     },
     phone: { type: String, default: "" },
     avatarUrl: { type: String, default: "" },
+    active: { type: Boolean, default: true, index: true },
     passwordResetTokenHash: { type: String, default: "" },
     passwordResetExpiresAt: { type: Date, default: null },
     passwordHash: { type: String, required: true },

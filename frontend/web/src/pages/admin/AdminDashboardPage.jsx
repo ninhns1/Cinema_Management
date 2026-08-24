@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { catalogApi, bookingApi, seatApi } from "../../services/apiClient";
+import { authApi } from "../../services/apiClientFixed";
 
 export function AdminDashboardPage() {
   const [movies, setMovies] = useState([]);
@@ -11,21 +12,25 @@ export function AdminDashboardPage() {
   const [movieForm, setMovieForm] = useState({ title: "", genre: "", rating: "", poster: "", showtimeKey: "" });
   const [savingMovie, setSavingMovie] = useState(false);
   const [seatOverview, setSeatOverview] = useState({});
+  const [customers, setCustomers] = useState([]);
+  const [customerQuery, setCustomerQuery] = useState("");
 
   async function loadMovies() {
     setLoading(true);
     setError("");
     try {
-      const [moviesResponse, showtimesResponse, statsResponse] = await Promise.all([
+      const [moviesResponse, showtimesResponse, statsResponse, customersResponse] = await Promise.all([
         catalogApi.get("/movies"),
         catalogApi.get("/showtimes"),
         bookingApi.get("/admin/stats"),
+        authApi.get("/admin/customers"),
       ]);
       const loadedMovies = moviesResponse.data.items || [];
       const loadedShowtimes = showtimesResponse.data.items || [];
       setMovies(loadedMovies);
       setShowtimes(loadedShowtimes);
       setStats(statsResponse.data);
+      setCustomers(customersResponse.data.items || []);
       const seatEntries = await Promise.all(loadedShowtimes.map(async (showtime) => {
         try {
           const response = await seatApi.get(`/${showtime.showtimeId}`);
@@ -47,6 +52,15 @@ export function AdminDashboardPage() {
       setError("Không thể tải danh mục phim.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function toggleCustomer(customer) {
+    try {
+      const response = await authApi.patch(`/admin/customers/${customer.id}/status`, { active: !customer.active });
+      setCustomers((current) => current.map((item) => item.id === customer.id ? response.data.user : item));
+    } catch (_error) {
+      setError("Không thể cập nhật trạng thái khách hàng.");
     }
   }
 
@@ -136,6 +150,17 @@ export function AdminDashboardPage() {
             <article className="admin-now-showing-item" key={movie.movieId}>
               <img src={movie.poster} alt="" />
               <div><strong>{movie.title}</strong><span>{movie.genre}</span></div>
+            </article>
+          ))}
+        </div>
+        <h3 className="admin-subtitle">Tài khoản khách hàng</h3>
+        <input className="admin-customer-search" value={customerQuery} onChange={(event) => setCustomerQuery(event.target.value)} placeholder="Tìm theo tên hoặc email" />
+        <div className="admin-customer-list">
+          {customers.filter((customer) => `${customer.fullName} ${customer.email}`.toLowerCase().includes(customerQuery.toLowerCase())).map((customer) => (
+            <article className="admin-customer-row" key={customer.id}>
+              <div><strong>{customer.fullName}</strong><span>{customer.email} · {customer.phone || "Chưa có số điện thoại"}</span></div>
+              <span className={customer.active ? "customer-active" : "customer-disabled"}>{customer.active ? "Đang hoạt động" : "Đã khóa"}</span>
+              <button type="button" className="text-button" onClick={() => toggleCustomer(customer)}>{customer.active ? "Khóa" : "Mở khóa"}</button>
             </article>
           ))}
         </div>

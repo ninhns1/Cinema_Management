@@ -30,6 +30,7 @@ function sanitizeUser(user) {
     avatarUrl: user.avatarUrl || "",
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
+    active: user.active !== false,
   };
 }
 
@@ -141,6 +142,11 @@ async function loginUser({ email, password }) {
     error.statusCode = 401;
     throw error;
   }
+  if (user.active === false) {
+    const error = new Error("ACCOUNT_DISABLED");
+    error.statusCode = 403;
+    throw error;
+  }
 
   const isValid = await bcrypt.compare(trimmedPassword, user.passwordHash);
   if (!isValid) {
@@ -156,6 +162,28 @@ async function loginUser({ email, password }) {
     accessToken: createAccessToken(user),
     refreshToken,
   };
+}
+
+async function listCustomers() {
+  return User.find({ role: "CUSTOMER" })
+    .select("-passwordHash -passwordResetTokenHash -passwordResetExpiresAt")
+    .sort({ createdAt: -1 })
+    .lean()
+    .then((users) => users.map((user) => sanitizeUser(user)));
+}
+
+async function setCustomerStatus({ userId, active }) {
+  const user = await User.findOneAndUpdate(
+    { _id: userId, role: "CUSTOMER" },
+    { active: Boolean(active) },
+    { new: true },
+  );
+  if (!user) {
+    const error = new Error("CUSTOMER_NOT_FOUND");
+    error.statusCode = 404;
+    throw error;
+  }
+  return sanitizeUser(user);
 }
 
 async function changePassword({ userId, currentPassword, newPassword }) {
@@ -316,6 +344,8 @@ module.exports = {
   updateProfile,
   requestPasswordReset,
   resetPassword,
+  listCustomers,
+  setCustomerStatus,
   refreshTokens,
   revokeRefreshToken,
   sanitizeUser,

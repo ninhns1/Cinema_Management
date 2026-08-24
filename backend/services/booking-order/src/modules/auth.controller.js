@@ -1,6 +1,6 @@
 const express = require("express");
 const User = require("./user.model");
-const { registerUser, loginUser, changePassword, updateAvatar, updateProfile, requestPasswordReset, resetPassword, refreshTokens, revokeRefreshToken, sanitizeUser, verifyToken } = require("./auth.service");
+const { registerUser, loginUser, changePassword, updateAvatar, updateProfile, requestPasswordReset, resetPassword, listCustomers, setCustomerStatus, refreshTokens, revokeRefreshToken, sanitizeUser, verifyToken } = require("./auth.service");
 
 function createAuthRouter() {
   const router = express.Router();
@@ -78,6 +78,44 @@ function createAuthRouter() {
         ? 401
         : error.statusCode || 400;
       return res.status(status).json({ error: error.message || "Avatar update failed." });
+    }
+  });
+
+  function requireAdmin(req, res) {
+    const authHeader = req.headers.authorization || "";
+    const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
+    if (!token) {
+      res.status(401).json({ error: "Unauthorized." });
+      return null;
+    }
+    try {
+      const payload = verifyToken(token);
+      if (payload.role !== "ADMIN") {
+        res.status(403).json({ error: "ADMIN_REQUIRED" });
+        return null;
+      }
+      return payload;
+    } catch (_error) {
+      res.status(401).json({ error: "Invalid or expired token." });
+      return null;
+    }
+  }
+
+  router.get("/admin/customers", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    try {
+      return res.json({ items: await listCustomers() });
+    } catch (error) {
+      return res.status(500).json({ error: error.message });
+    }
+  });
+
+  router.patch("/admin/customers/:userId/status", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    try {
+      return res.json({ user: await setCustomerStatus({ userId: req.params.userId, active: req.body?.active }) });
+    } catch (error) {
+      return res.status(error.statusCode || 400).json({ error: error.message });
     }
   });
 
