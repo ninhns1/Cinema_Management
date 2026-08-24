@@ -16,6 +16,7 @@ function sanitizeUser(user) {
     email: user.email,
     phone: user.phone,
     role: user.role,
+    avatarUrl: user.avatarUrl || "",
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
   };
@@ -184,6 +185,27 @@ async function changePassword({ userId, currentPassword, newPassword }) {
   return { user: sanitizeUser(user), accessToken: createAccessToken(user) };
 }
 
+async function updateAvatar({ userId, avatarUrl }) {
+  if (typeof avatarUrl !== "string" || avatarUrl.length > 700000) {
+    const error = new Error("Invalid avatar.");
+    error.statusCode = 400;
+    throw error;
+  }
+  if (avatarUrl && !/^data:image\/(jpeg|png|webp);base64,/.test(avatarUrl)) {
+    const error = new Error("Invalid avatar.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const user = await User.findByIdAndUpdate(userId, { avatarUrl }, { new: true });
+  if (!user) {
+    const error = new Error("User not found.");
+    error.statusCode = 404;
+    throw error;
+  }
+  return { user: sanitizeUser(user), accessToken: createAccessToken(user) };
+}
+
 async function refreshTokens({ refreshToken }) {
   const record = await verifyRefreshToken(refreshToken);
   // rotate: revoke old and create new
@@ -208,6 +230,7 @@ module.exports = {
   registerUser,
   loginUser,
   changePassword,
+  updateAvatar,
   refreshTokens,
   revokeRefreshToken,
   sanitizeUser,

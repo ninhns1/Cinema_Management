@@ -1,6 +1,6 @@
 const express = require("express");
 const User = require("./user.model");
-const { registerUser, loginUser, changePassword, refreshTokens, revokeRefreshToken, sanitizeUser, verifyToken } = require("./auth.service");
+const { registerUser, loginUser, changePassword, updateAvatar, refreshTokens, revokeRefreshToken, sanitizeUser, verifyToken } = require("./auth.service");
 
 function createAuthRouter() {
   const router = express.Router();
@@ -42,6 +42,23 @@ function createAuthRouter() {
         ? 401
         : error.statusCode || 400;
       return res.status(status).json({ error: error.message || "Password change failed." });
+    }
+  });
+
+  router.patch("/me/avatar", async (req, res) => {
+    const authHeader = req.headers.authorization || "";
+    const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
+    if (!token) return res.status(401).json({ error: "Unauthorized." });
+
+    try {
+      const payload = verifyToken(token);
+      const result = await updateAvatar({ userId: payload.sub, avatarUrl: req.body?.avatarUrl });
+      return res.json(result);
+    } catch (error) {
+      const status = error.name === "TokenExpiredError" || error.name === "JsonWebTokenError"
+        ? 401
+        : error.statusCode || 400;
+      return res.status(status).json({ error: error.message || "Avatar update failed." });
     }
   });
 
