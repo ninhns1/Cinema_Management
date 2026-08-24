@@ -3,6 +3,7 @@ const {
   holdSeat,
   confirmHeldSeat,
   releaseHeldSeat,
+  releaseBookedSeat,
   releaseExpiredHolds,
 } = require("../hold/hold.service");
 
@@ -59,6 +60,24 @@ function createSeatRouter(ctx) {
 
       const result = await releaseHeldSeat({
         holdId,
+        userId,
+        lockTtlMs: ctx.env.lockTtlMs,
+        redisClient: ctx.redis.commandClient,
+        realtimePublisher: ctx.realtimePublisher,
+      });
+      return res.json(result);
+    } catch (error) {
+      return res.status(409).json({ error: error.message });
+    }
+  });
+
+  router.post("/release-booked", async (req, res) => {
+    try {
+      const { showtimeId, seatId, userId } = req.body;
+      if (!showtimeId || !seatId || !userId) return res.status(400).json({ error: "SEAT_DETAILS_REQUIRED" });
+      const result = await releaseBookedSeat({
+        showtimeId,
+        seatId,
         userId,
         lockTtlMs: ctx.env.lockTtlMs,
         redisClient: ctx.redis.commandClient,

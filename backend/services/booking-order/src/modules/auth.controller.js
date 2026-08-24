@@ -1,6 +1,6 @@
 const express = require("express");
 const User = require("./user.model");
-const { registerUser, loginUser, changePassword, updateAvatar, refreshTokens, revokeRefreshToken, sanitizeUser, verifyToken } = require("./auth.service");
+const { registerUser, loginUser, changePassword, updateAvatar, updateProfile, requestPasswordReset, resetPassword, refreshTokens, revokeRefreshToken, sanitizeUser, verifyToken } = require("./auth.service");
 
 function createAuthRouter() {
   const router = express.Router();
@@ -25,6 +25,25 @@ function createAuthRouter() {
     } catch (error) {
       const status = error.statusCode || 500;
       res.status(status).json({ error: error.message || "Login failed." });
+    }
+  });
+
+  router.post("/forgot-password", async (req, res) => {
+    try {
+      const result = await requestPasswordReset(req.body?.email);
+      return res.json(result);
+    } catch (error) {
+      const status = error.message === "SMTP_NOT_CONFIGURED" ? 503 : 500;
+      return res.status(status).json({ error: error.message || "Unable to send reset email." });
+    }
+  });
+
+  router.post("/reset-password", async (req, res) => {
+    try {
+      const result = await resetPassword(req.body || {});
+      return res.json(result);
+    } catch (error) {
+      return res.status(error.statusCode || 400).json({ error: error.message || "Password reset failed." });
     }
   });
 
@@ -59,6 +78,23 @@ function createAuthRouter() {
         ? 401
         : error.statusCode || 400;
       return res.status(status).json({ error: error.message || "Avatar update failed." });
+    }
+  });
+
+  router.patch("/me", async (req, res) => {
+    const authHeader = req.headers.authorization || "";
+    const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
+    if (!token) return res.status(401).json({ error: "Unauthorized." });
+
+    try {
+      const payload = verifyToken(token);
+      const result = await updateProfile({ userId: payload.sub, ...req.body });
+      return res.json(result);
+    } catch (error) {
+      const status = error.name === "TokenExpiredError" || error.name === "JsonWebTokenError"
+        ? 401
+        : error.statusCode || 400;
+      return res.status(status).json({ error: error.message || "Profile update failed." });
     }
   });
 

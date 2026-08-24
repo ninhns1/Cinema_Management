@@ -85,7 +85,7 @@ async function createBooking({
   }
 }
 
-async function payBooking({ env, bookingId, userId }) {
+async function payBooking({ env, bookingId, userId, paymentMethod }) {
   const booking = await Booking.findOne({ bookingId, userId });
   if (!booking) {
     throw new Error("BOOKING_NOT_FOUND");
@@ -107,11 +107,13 @@ async function payBooking({ env, bookingId, userId }) {
       bookingId,
       amount: booking.totalAmount,
       userId,
+      paymentMethod,
     });
 
     booking.bookingStatus = "BOOKED";
     booking.paymentStatus = "PAID";
     booking.paymentRef = payment.data.paymentRef;
+    booking.paymentMethod = payment.data.paymentMethod;
     await booking.save();
 
     return booking;
@@ -124,6 +126,43 @@ async function payBooking({ env, bookingId, userId }) {
 
 async function listBookings({ userId }) {
   return Booking.find({ userId }).sort({ createdAt: -1 }).lean();
+}
+
+async function cancelBooking({ env, bookingId, userId }) {
+  const booking = await Booking.findOne({ bookingId, userId });
+  if (!booking) throw new Error("BOOKING_NOT_FOUND");
+  if (booking.bookingStatus === "CANCELLED") return booking;
+
+  if (booking.paymentStatus === "PAID") {
+    if (!booking.paymentRef) throw new Error("PAYMENT_REFERENCE_MISSING");
+    const refund = await axios.post(`${env.paymentServiceBaseUrl}/api/payments/refund`, {
+      bookingId,
+      paymentRef: booking.paymentRef,
+      amount: booking.totalAmount,
+    });
+    booking.paymentStatus = "REFUNDED";
+    booking.refundRef = refund.data.refundRef;
+    booking.refundedAt = refund.data.refundedAt;
+  }
+
+  if (booking.paymentStatus === "REFUNDED") {
+    await Promise.all(booking.seatIds.map((seatId) =>
+      axios.post(`${env.seatServiceBaseUrl}/api/seats/release-booked`, {
+        showtimeId: booking.showtimeId,
+        seatId,
+        userId,
+      }),
+    ));
+  } else {
+    await Promise.all(booking.holdIds.map((holdId) =>
+      axios.post(`${env.seatServiceBaseUrl}/api/seats/release`, { holdId, userId }),
+    ));
+  }
+  booking.bookingStatus = "CANCELLED";
+  booking.holdIds = [];
+  booking.holdExpiresAt = null;
+  await booking.save();
+  return booking;
 }
 
 async function getAdminStats() {
@@ -145,4 +184,4 @@ async function getAdminStats() {
   return summary || { totalBookings: 0, paidBookings: 0, revenue: 0 };
 }
 
-module.exports = { createBooking, payBooking, listBookings, getAdminStats };
+module.exports = { createBooking, payBooking, listBookings, cancelBooking, getAdminStats };

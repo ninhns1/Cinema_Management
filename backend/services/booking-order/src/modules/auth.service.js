@@ -1,9 +1,20 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
+const nodemailer = require("nodemailer");
 const env = require("../config/env");
 const User = require("./user.model");
 const RefreshToken = require("./refresh.model");
+
+function createMailTransport() {
+  if (!env.smtpUser || !env.smtpPass) {
+    throw new Error("SMTP_NOT_CONFIGURED");
+  }
+  return nodemailer.createTransport({
+    service: "gmail",
+    auth: { user: env.smtpUser, pass: env.smtpPass },
+  });
+}
 
 function normalizeEmail(email) {
   return String(email || "").trim().toLowerCase();
@@ -206,6 +217,77 @@ async function updateAvatar({ userId, avatarUrl }) {
   return { user: sanitizeUser(user), accessToken: createAccessToken(user) };
 }
 
+async function updateProfile({ userId, fullName, phone }) {
+  const normalizedName = String(fullName || "").trim();
+  const normalizedPhone = String(phone || "").trim();
+  if (normalizedName.length < 2 || normalizedName.length > 100) {
+    const error = new Error("Full name must be between 2 and 100 characters.");
+    error.statusCode = 400;
+    throw error;
+  }
+  if (normalizedPhone && !/^[0-9+() .-]{8,20}$/.test(normalizedPhone)) {
+    const error = new Error("Invalid phone number.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const user = await User.findByIdAndUpdate(
+    userId,
+    { fullName: normalizedName, phone: normalizedPhone },
+    { new: true, runValidators: true },
+  );
+  if (!user) {
+    const error = new Error("User not found.");
+    error.statusCode = 404;
+    throw error;
+  }
+  return { user: sanitizeUser(user), accessToken: createAccessToken(user) };
+}
+
+async function requestPasswordReset(email) {
+  const user = await User.findOne({ email: normalizeEmail(email) });
+  if (!user) return { message: "If the email exists, a reset code has been created." };
+
+  const resetToken = crypto.randomBytes(24).toString("hex");
+  user.passwordResetTokenHash = sha256(resetToken);
+  user.passwordResetExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
+  await user.save();
+  await createMailTransport().sendMail({
+    from: env.smtpFrom,
+    to: user.email,
+    subject: "Cinema Management - Password reset code",
+    text: `Your password reset code is:\n\n${resetToken}\n\nThis code expires in 15 minutes. If you did not request this, ignore this email.`,
+  });
+  return {
+    message: "If the email exists, a reset code has been sent.",
+  };
+}
+
+async function resetPassword({ resetToken, newPassword }) {
+  const trimmedPassword = String(newPassword || "").trim();
+  if (!resetToken || trimmedPassword.length < 6) {
+    const error = new Error("Reset code and a password of at least 6 characters are required.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const user = await User.findOne({
+    passwordResetTokenHash: sha256(resetToken),
+    passwordResetExpiresAt: { $gt: new Date() },
+  });
+  if (!user) {
+    const error = new Error("Reset code is invalid or expired.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  user.passwordHash = await bcrypt.hash(trimmedPassword, 12);
+  user.passwordResetTokenHash = "";
+  user.passwordResetExpiresAt = null;
+  await user.save();
+  return { user: sanitizeUser(user), accessToken: createAccessToken(user) };
+}
+
 async function refreshTokens({ refreshToken }) {
   const record = await verifyRefreshToken(refreshToken);
   // rotate: revoke old and create new
@@ -231,6 +313,9 @@ module.exports = {
   loginUser,
   changePassword,
   updateAvatar,
+  updateProfile,
+  requestPasswordReset,
+  resetPassword,
   refreshTokens,
   revokeRefreshToken,
   sanitizeUser,

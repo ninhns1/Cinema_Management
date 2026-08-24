@@ -23,6 +23,9 @@ export function AuthModal({ onClose, onAuthSuccess }) {
   const [form, setForm] = useState(defaultForm);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [resetToken, setResetToken] = useState("");
+  const [resetRequested, setResetRequested] = useState(false);
+  const [resetMessage, setResetMessage] = useState("");
 
   function handleFieldChange(event) {
     const { name, value } = event.target;
@@ -35,13 +38,23 @@ export function AuthModal({ onClose, onAuthSuccess }) {
     setError("");
 
     try {
-      const payload =
-        mode === "register"
-          ? form
-          : {
-              email: form.email,
-              password: form.password,
-            };
+      const payload = mode === "register" ? form : { email: form.email, password: form.password };
+      if (mode === "forgot") {
+        if (resetRequested) {
+          const response = await axios.post("http://localhost:4003/api/auth/reset-password", {
+            resetToken,
+            newPassword: form.password,
+          });
+          const data = response.data;
+          setAuthSession(data.user, data.accessToken, data.refreshToken);
+          onAuthSuccess(data.user);
+        } else {
+          const response = await axios.post("http://localhost:4003/api/auth/forgot-password", { email: form.email });
+          setResetMessage(response.data.message || "A reset code has been sent to your email.");
+          setResetRequested(true);
+        }
+        return;
+      }
 
       const url = mode === "register" ? "http://localhost:4003/api/auth/register" : "http://localhost:4003/api/auth/login";
       const response = await axios.post(url, payload);
@@ -65,9 +78,9 @@ export function AuthModal({ onClose, onAuthSuccess }) {
         </button>
 
         <p className="section-kicker">WELCOME</p>
-        <h2>{mode === "login" ? "Sign in" : "Create account"}</h2>
+        <h2>{mode === "login" ? "Sign in" : mode === "forgot" ? "Reset password" : "Create account"}</h2>
 
-        <div className="auth-toggle">
+        {mode !== "forgot" ? <div className="auth-toggle">
           <button
             type="button"
             className={mode === "login" ? "auth-toggle-btn active" : "auth-toggle-btn"}
@@ -82,7 +95,7 @@ export function AuthModal({ onClose, onAuthSuccess }) {
           >
             Register
           </button>
-        </div>
+        </div> : null}
 
         <form className="auth-form" onSubmit={handleSubmit}>
           {mode === "register" ? (
@@ -124,7 +137,7 @@ export function AuthModal({ onClose, onAuthSuccess }) {
             </label>
           ) : null}
 
-          <label className="auth-field">
+          {mode !== "forgot" || resetRequested ? <label className="auth-field">
             <span>Password</span>
             <input
               type="password"
@@ -134,13 +147,27 @@ export function AuthModal({ onClose, onAuthSuccess }) {
               placeholder="••••••••"
               required
             />
-          </label>
+          </label> : null}
+
+          {mode === "forgot" && resetRequested ? (
+            <label className="auth-field">
+              <span>Reset code from your email</span>
+              <input value={resetToken} onChange={(event) => setResetToken(event.target.value)} required />
+            </label>
+          ) : null}
 
           {error ? <p className="error-text">{error}</p> : null}
+          {resetMessage ? <p className="profile-success">{resetMessage}</p> : null}
 
           <button type="submit" className="primary-btn auth-submit" disabled={submitting}>
-            {submitting ? "Processing..." : mode === "login" ? "Sign in" : "Create account"}
+            {submitting ? "Processing..." : mode === "login" ? "Sign in" : mode === "forgot" ? resetRequested ? "Set new password" : "Get reset code" : "Create account"}
           </button>
+          {mode === "login" ? <button type="button" className="text-button auth-switch" onClick={() => { setMode("forgot"); setError(""); }}>
+            Forgot password?
+          </button> : null}
+          {mode === "forgot" ? <button type="button" className="text-button auth-switch" onClick={() => { setMode("login"); setResetRequested(false); setResetToken(""); setResetMessage(""); setError(""); }}>
+            Back to sign in
+          </button> : null}
         </form>
       </div>
     </div>

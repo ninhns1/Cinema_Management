@@ -45,6 +45,32 @@ export function ProfilePage({ user, onUserUpdated, onNavigateTickets }) {
   const [passwordSuccess, setPasswordSuccess] = useState("");
   const [avatarLoading, setAvatarLoading] = useState(false);
   const [avatarError, setAvatarError] = useState("");
+  const [profileForm, setProfileForm] = useState({ fullName: "", phone: "" });
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileError, setProfileError] = useState("");
+  const [profileSuccess, setProfileSuccess] = useState("");
+
+  function updateProfileField(event) {
+    setProfileForm((current) => ({ ...current, [event.target.name]: event.target.value }));
+  }
+
+  async function saveProfile(event) {
+    event.preventDefault();
+    setProfileError("");
+    setProfileSuccess("");
+    setProfileLoading(true);
+    try {
+      const response = await authApi.patch("/me", profileForm);
+      setAuthSession(response.data.user, response.data.accessToken || getAccessToken());
+      setProfile(response.data.user);
+      onUserUpdated?.(response.data.user);
+      setProfileSuccess("Đã cập nhật thông tin tài khoản.");
+    } catch (apiError) {
+      setProfileError(apiError.response?.data?.error || "Không thể cập nhật thông tin tài khoản.");
+    } finally {
+      setProfileLoading(false);
+    }
+  }
 
   async function changeAvatar(event) {
     const file = event.target.files?.[0];
@@ -78,6 +104,10 @@ export function ProfilePage({ user, onUserUpdated, onNavigateTickets }) {
         const response = await authApi.get("/me");
         if (!mounted) return;
         setProfile(response.data.user);
+        setProfileForm({
+          fullName: response.data.user.fullName || "",
+          phone: response.data.user.phone || "",
+        });
         onUserUpdated?.(response.data.user);
       } catch (_error) {
         if (mounted) setError("Không thể tải thông tin tài khoản.");
@@ -177,24 +207,35 @@ export function ProfilePage({ user, onUserUpdated, onNavigateTickets }) {
               </div>
               <span className="profile-status">Đang hoạt động</span>
             </div>
-            <div className="profile-fields">
+            <form className="profile-edit-form" onSubmit={saveProfile}>
+              <div className="profile-fields">
               <div className="profile-field">
                 <span>Họ và tên</span>
-                <strong>{currentUser.fullName}</strong>
+                <input name="fullName" value={profileForm.fullName || currentUser.fullName || ""} onChange={updateProfileField} required minLength={2} maxLength={100} />
               </div>
               <div className="profile-field">
                 <span>Email</span>
                 <strong>{currentUser.email}</strong>
               </div>
-              <div className="profile-field">
-                <span>Mã người dùng</span>
-                <strong className="profile-id">{currentUser.id}</strong>
-              </div>
+                <div className="profile-field">
+                  <span>Số điện thoại</span>
+                  <input name="phone" value={profileForm.phone || currentUser.phone || ""} onChange={updateProfileField} inputMode="tel" maxLength={20} />
+                </div>
+                <div className="profile-field">
+                  <span>Mã người dùng</span>
+                  <strong className="profile-id">{currentUser.id}</strong>
+                </div>
               <div className="profile-field">
                 <span>Bảo mật</span>
                 <strong>Password protected</strong>
               </div>
-            </div>
+              </div>
+              {profileError ? <p className="error-text">{profileError}</p> : null}
+              {profileSuccess ? <p className="profile-success">{profileSuccess}</p> : null}
+              <button type="submit" className="primary-btn password-submit" disabled={profileLoading}>
+                {profileLoading ? "Đang lưu..." : "Lưu thông tin"}
+              </button>
+            </form>
             <form className="password-form" onSubmit={changePassword}>
               <div className="profile-section-heading password-heading">
                 <div>

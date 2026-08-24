@@ -796,6 +796,68 @@ body {
   margin: 28px 0 0;
 }
 
+.admin-now-showing {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.admin-now-showing-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #1b1c1e;
+}
+
+.admin-now-showing-item img {
+  width: 42px;
+  height: 58px;
+  flex-shrink: 0;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.admin-now-showing-item div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.admin-now-showing-item strong,
+.admin-now-showing-item span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-now-showing-item span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.admin-seat-summary {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(3, max-content);
+  gap: 4px 12px;
+  font-size: 12px;
+}
+
+.admin-seat-summary small {
+  grid-column: 1 / -1;
+  overflow-wrap: anywhere;
+  color: var(--muted);
+}
+
+.seat-booked { color: #ff9fbd; }
+.seat-available { color: #86efac; }
+.seat-held { color: #facc15; }
+
 .admin-stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

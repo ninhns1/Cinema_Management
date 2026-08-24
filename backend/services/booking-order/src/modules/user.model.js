@@ -13,6 +13,8 @@ const UserSchema = new mongoose.Schema(
     },
     phone: { type: String, default: "" },
     avatarUrl: { type: String, default: "" },
+    passwordResetTokenHash: { type: String, default: "" },
+    passwordResetExpiresAt: { type: Date, default: null },
     passwordHash: { type: String, required: true },
     role: {
       type: String,
