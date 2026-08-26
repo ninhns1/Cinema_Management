@@ -93,6 +93,7 @@
 
 .tickets-page .tickets-list:empty::after {
   content: "Ban chua dat ve nao. Chon phim va suat chieu de bat dau.";
+    content: "Bạn chưa đặt vé nào. Hãy chọn phim và suất chiếu để bắt đầu.";
   display: block;
   padding: 56px 24px;
   text-align: center;
@@ -309,4 +310,43 @@
   .tickets-page .ticket-card:hover {
     transform: none;
   }
+}
+
+.tickets-page .ticket-qr {
+  grid-column: 2;
+  grid-row: 3 / span 3;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 20px 20px;
+  color: var(--gold);
+  font-size: 11px;
+  text-align: center;
+}
+
+.tickets-page .ticket-qr img {
+  width: 132px;
+  height: 132px;
+  padding: 6px;
+  background: #fff;
+  border-radius: 6px;
+}
+
+.tickets-page .ticket-qr a {
+  color: var(--gold);
+  text-decoration: none;
+}
+
+.tickets-page .ticket-qr a:hover {
+  text-decoration: underline;
+}
+
+.tickets-page .ticket-qr-loading,
+.tickets-page .ticket-qr-error {
+  grid-column: 2;
+  margin: 12px 20px;
+  color: var(--ink-dim);
+  font-size: 11px;
+  text-align: center;
 }

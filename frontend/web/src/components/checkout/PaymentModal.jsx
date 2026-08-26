@@ -4,6 +4,7 @@ import { bookingApi } from "../../services/apiClientFixed";
 export function PaymentModal({ booking, userId, onClose, onPaid }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("CARD");
 
   async function confirmPayment() {
     setSubmitting(true);
@@ -13,6 +14,7 @@ export function PaymentModal({ booking, userId, onClose, onPaid }) {
       const response = await bookingApi.post("/pay", {
         bookingId: booking.bookingId,
         userId,
+        paymentMethod,
       });
       onPaid(response.data);
       onClose();
@@ -63,6 +65,15 @@ export function PaymentModal({ booking, userId, onClose, onPaid }) {
             <strong>Status:</strong> {booking.paymentStatus}
           </p>
         </div>
+
+        <label className="payment-method-field">
+          <span>Payment method</span>
+          <select value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value)} disabled={submitting}>
+            <option value="CARD">Bank card</option>
+            <option value="E_WALLET">E-wallet</option>
+            <option value="CASH">Cash at counter</option>
+          </select>
+        </label>
 
         {error ? <p className="error-text">{error}</p> : null}
 

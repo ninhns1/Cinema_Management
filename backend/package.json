@@ -11,6 +11,8 @@
     "dev:pos": "npm --workspace @cinema/pos-sales run dev",
     "dev:booking": "npm --workspace @cinema/booking-order run dev",
     "dev:payment": "npm --workspace @cinema/payment run dev",
-    "dev:notification": "npm --workspace @cinema/notification run dev"
+    "dev:notification": "npm --workspace @cinema/notification run dev",
+    "dev:catalog": "npm --workspace @cinema/catalog run dev",
+    "dev:auth": "npm --workspace @cinema/auth run dev"
   }
 }

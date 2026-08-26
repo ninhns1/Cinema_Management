@@ -23,10 +23,11 @@ export function CheckoutPanel({ hold, userId }) {
 
   return (
     <section className="card">
-      <h3>Thanh toan</h3>
+      <h3>Thanh toán</h3>
+        <h3>Thanh toán</h3>
       <HoldCountdown expiresAt={hold?.expiresAt} />
       <button disabled={!hold || loading} onClick={checkout}>
-        {loading ? "Dang xu ly..." : "Xac nhan thanh toan"}
+          {loading ? "Đang xử lý..." : "Xác nhận thanh toán"}
       </button>
       {result ? <pre>{JSON.stringify(result, null, 2)}</pre> : null}
     </section>

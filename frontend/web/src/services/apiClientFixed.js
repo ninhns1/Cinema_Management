@@ -43,6 +43,14 @@ export const authApi = axios.create({
   baseURL: "http://localhost:4003/api/auth",
 });
 
+authApi.interceptors.request.use((config) => {
+  const token = getAccessToken();
+  if (token) {
+    config.headers = { ...config.headers, Authorization: `Bearer ${token}` };
+  }
+  return config;
+});
+
 export const seatApi = axios.create({
   baseURL: "http://localhost:4001/api/seats",
 });

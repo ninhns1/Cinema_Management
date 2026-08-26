@@ -1,32 +1,14 @@
 const express = require("express");
-const { verifyToken } = require("../auth.service");
-const {
-  createBooking,
-  payBooking,
-  listBookings,
-} = require("./booking.service");
-
-function getAuthenticatedUserId(req) {
-  const authHeader = req.headers.authorization || "";
-  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
-  if (!token) return null;
-
-  try {
-    const payload = verifyToken(token);
-    return payload.sub || null;
-  } catch (_error) {
-    return null;
-  }
-}
+const { createBooking, payBooking, listBookings, cancelBooking, getAdminStats } = require("./booking.service");
+const { requireAuth, requireAdmin } = require("../../middleware/auth");
 
 function createBookingRouter(env) {
   const router = express.Router();
+  router.use(requireAuth(env));
 
   router.post("/create", async (req, res) => {
     try {
-      const authUserId = getAuthenticatedUserId(req);
       const {
-        userId,
         movieTitle,
         showtimeId,
         showtimeLabel,
@@ -37,14 +19,9 @@ function createBookingRouter(env) {
         seatPrice,
       } = req.body;
 
-      const effectiveUserId = userId || authUserId;
-      if (!effectiveUserId) {
-        return res.status(401).json({ error: "Unauthorized." });
-      }
-
       const result = await createBooking({
         env,
-        userId: effectiveUserId,
+        userId: req.user.sub,
         movieTitle,
         showtimeId,
         showtimeLabel,
@@ -64,19 +41,8 @@ function createBookingRouter(env) {
 
   router.post("/pay", async (req, res) => {
     try {
-      const authUserId = getAuthenticatedUserId(req);
-      const { bookingId, userId } = req.body;
-      const effectiveUserId = userId || authUserId;
-
-      if (!effectiveUserId) {
-        return res.status(401).json({ error: "Unauthorized." });
-      }
-
-      const result = await payBooking({
-        env,
-        bookingId,
-        userId: effectiveUserId,
-      });
+      const { bookingId, paymentMethod } = req.body;
+      const result = await payBooking({ env, bookingId, paymentMethod, userId: req.user.sub });
       res.json(result);
     } catch (error) {
       const status = error.response?.status || 500;
@@ -86,16 +52,26 @@ function createBookingRouter(env) {
 
   router.get("/", async (req, res) => {
     try {
-      const authUserId = getAuthenticatedUserId(req);
-      const { userId } = req.query;
-      const effectiveUserId = userId || authUserId;
-
-      if (!effectiveUserId) {
-        return res.status(401).json({ error: "Unauthorized." });
-      }
-
-      const items = await listBookings({ userId: effectiveUserId });
+      const items = await listBookings({ userId: req.user.sub });
       res.json({ items });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  router.delete("/:bookingId", async (req, res) => {
+    try {
+      const booking = await cancelBooking({ env, bookingId: req.params.bookingId, userId: req.user.sub });
+      return res.json(booking);
+    } catch (error) {
+      const status = error.message === "BOOKING_NOT_FOUND" ? 404 : error.message === "PAYMENT_REFERENCE_MISSING" ? 409 : error.response?.status || 500;
+      return res.status(status).json({ error: error.message });
+    }
+  });
+
+  router.get("/admin/stats", requireAdmin(env), async (_req, res) => {
+    try {
+      res.json(await getAdminStats());
     } catch (error) {
       res.status(500).json({ error: error.message });
     }

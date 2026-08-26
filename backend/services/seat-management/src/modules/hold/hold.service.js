@@ -166,6 +166,102 @@ async function confirmHeldSeat({
   }
 }
 
+async function releaseHeldSeat({
+  holdId,
+  userId,
+  lockTtlMs,
+  redisClient,
+  realtimePublisher,
+}) {
+  const hold = await Hold.findOne({
+    holdId,
+    userId,
+    status: { $in: ["ACTIVE", "CONFIRMED"] },
+  });
+  if (!hold) throw new Error("HOLD_NOT_FOUND");
+
+  const key = lockKey(hold.showtimeId, hold.seatId);
+  const value = buildLockValue();
+  const locked = await acquireLock(redisClient, key, value, lockTtlMs);
+  if (!locked) throw new Error("SEAT_BUSY");
+
+  try {
+    const seat = await findOrCreateSeat(hold.showtimeId, hold.seatId);
+    const validSeatState =
+      (hold.status === "ACTIVE" && seat.status === "HELD" && seat.holdId === holdId) ||
+      (hold.status === "CONFIRMED" && seat.status === "BOOKED");
+    if (!validSeatState) {
+      throw new Error("SEAT_STATE_INVALID");
+    }
+
+    const updated = await updateSeatWithVersion({
+      showtimeId: hold.showtimeId,
+      seatId: hold.seatId,
+      expectedVersion: seat.version,
+      patch: {
+        status: "AVAILABLE",
+        holdId: null,
+        heldBy: null,
+        holdExpiresAt: null,
+      },
+    });
+
+    if (!updated) throw new Error("SEAT_RACE_CONDITION");
+
+    hold.status = "RELEASED";
+    await hold.save();
+    await realtimePublisher.broadcast({
+      action: "RELEASED",
+      showtimeId: hold.showtimeId,
+      seatId: hold.seatId,
+      status: "AVAILABLE",
+      holdId,
+    });
+
+    return {
+      holdId,
+      showtimeId: hold.showtimeId,
+      seatId: hold.seatId,
+      status: "AVAILABLE",
+    };
+  } finally {
+    await releaseLock(redisClient, key, value);
+  }
+}
+
+async function releaseBookedSeat({
+  showtimeId,
+  seatId,
+  userId,
+  lockTtlMs,
+  redisClient,
+  realtimePublisher,
+}) {
+  const seat = await findOrCreateSeat(showtimeId, seatId);
+  if (seat.status !== "BOOKED" || seat.heldBy !== userId) {
+    throw new Error("BOOKED_SEAT_NOT_FOUND");
+  }
+
+  const key = lockKey(showtimeId, seatId);
+  const value = buildLockValue();
+  const locked = await acquireLock(redisClient, key, value, lockTtlMs);
+  if (!locked) throw new Error("SEAT_BUSY");
+
+  try {
+    const updated = await updateSeatWithVersion({
+      showtimeId,
+      seatId,
+      expectedVersion: seat.version,
+      patch: { status: "AVAILABLE", holdId: null, heldBy: null, holdExpiresAt: null },
+    });
+    if (!updated) throw new Error("SEAT_RACE_CONDITION");
+    await realtimePublisher.broadcast({ action: "RELEASED", showtimeId, seatId, status: "AVAILABLE" });
+    return { showtimeId, seatId, status: "AVAILABLE" };
+  } finally {
+    await releaseLock(redisClient, key, value);
+  }
+}
+
 async function releaseExpiredHolds({ lockTtlMs, redisClient, realtimePublisher }) {
   const expiredHolds = await Hold.find({
     status: "ACTIVE",
@@ -214,5 +310,7 @@ async function releaseExpiredHolds({ lockTtlMs, redisClient, realtimePublisher }
 module.exports = {
   holdSeat,
   confirmHeldSeat,
+  releaseHeldSeat,
+  releaseBookedSeat,
   releaseExpiredHolds,
 };

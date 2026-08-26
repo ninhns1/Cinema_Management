@@ -1,6 +1,7 @@
 const dotenv = require("dotenv");
+const path = require("path");
 
-dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 
 module.exports = {
   port: Number(process.env.PORT || 4003),
@@ -8,8 +9,11 @@ module.exports = {
   seatServiceBaseUrl: process.env.SEAT_SERVICE_BASE_URL || "http://localhost:4001",
   paymentServiceBaseUrl:
     process.env.PAYMENT_SERVICE_BASE_URL || "http://localhost:4004",
-  jwtSecret: process.env.JWT_SECRET || "cinema-dev-secret",
+  jwtSecret: process.env.JWT_SECRET || "development-only-secret",
   jwtAccessExpiresIn: process.env.JWT_ACCESS_EXPIRES_IN || "15m",
   jwtRefreshExpiresDays: Number(process.env.JWT_REFRESH_EXPIRES_DAYS || 7),
   adminRegistrationSecret: process.env.ADMIN_REG_SECRET || "",
+  smtpUser: process.env.SMTP_USER || "",
+  smtpPass: process.env.SMTP_PASS || "",
+  smtpFrom: process.env.SMTP_FROM || process.env.SMTP_USER || "",
 };

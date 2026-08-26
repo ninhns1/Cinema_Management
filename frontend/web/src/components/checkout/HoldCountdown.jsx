@@ -21,7 +21,7 @@ export function HoldCountdown({ expiresAt }) {
 
   return (
     <p>
-      Ghe dang duoc giu: {minutes}:{String(seconds).padStart(2, "0")}
+      Ghế đang được giữ: {minutes}:{String(seconds).padStart(2, "0")}
     </p>
   );
 }

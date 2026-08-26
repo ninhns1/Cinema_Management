@@ -14,19 +14,23 @@ const BookingSchema = new mongoose.Schema(
     seatPrice: { type: Number, required: true },
     totalAmount: { type: Number, required: true },
     holdIds: { type: [String], default: [] },
+    holdExpiresAt: { type: Date, default: null },
     bookingStatus: {
       type: String,
-      enum: ["PENDING_PAYMENT", "BOOKED", "FAILED"],
+      enum: ["PENDING_PAYMENT", "BOOKED", "FAILED", "CANCELLED"],
       default: "PENDING_PAYMENT",
       index: true,
     },
     paymentStatus: {
       type: String,
-      enum: ["UNPAID", "PAID"],
+      enum: ["UNPAID", "PAID", "REFUNDED"],
       default: "UNPAID",
       index: true,
     },
     paymentRef: { type: String, default: null },
+    paymentMethod: { type: String, enum: ["CARD", "E_WALLET", "CASH"], default: null },
+    refundRef: { type: String, default: null },
+    refundedAt: { type: Date, default: null },
   },
   { timestamps: true }
 );

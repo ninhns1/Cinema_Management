@@ -11,6 +11,7 @@ import { BookingModal } from "../../components/checkout/BookingModal";
 import { clearAuthSession, getStoredUser, getRefreshToken } from "../../services/apiClientFixed";
 import { authApi } from "../../services/apiClientFixed";
 import { MyTicketsPage } from "./MyTicketsPage";
+import { ProfilePage } from "./ProfilePage";
 import { AdminDashboardPage } from "../admin/AdminDashboardPage";
 
 const movies = [
@@ -356,6 +357,10 @@ export function CustomerHomePage() {
           setCurrentPage("home");
         }}
         onNavigateTickets={handleNavigateTickets}
+        onNavigateProfile={() => {
+          if (!authUser) return openAuthModal();
+          setCurrentPage("profile");
+        }}
         onOpenAuth={() => openAuthModal()}
         onLogout={handleLogout}
       />
@@ -370,6 +375,15 @@ export function CustomerHomePage() {
       ) : currentPage === "tickets" ? (
         <section className="home-content">
           <MyTicketsPage userId={authUser?.id || null} onPaidSuccess={showSuccessToast} />
+          <Footer />
+        </section>
+      ) : currentPage === "profile" ? (
+        <section className="home-content">
+          <ProfilePage
+            user={authUser}
+            onUserUpdated={setAuthUser}
+            onNavigateTickets={() => setCurrentPage("tickets")}
+          />
           <Footer />
         </section>
       ) : currentPage === "admin" ? (
