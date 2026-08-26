@@ -45,6 +45,11 @@ From `frontend/web` folder:
 
 - `npm run dev`
 
+From `fraud-detection` folder:
+
+- `python -m pip install -r requirements.txt`
+- `uvicorn main:app --host 0.0.0.0 --port 8000`
+
 ## Implemented architecture
 
 - Seat Management Service is the central source of truth for seat state
@@ -55,7 +60,8 @@ From `frontend/web` folder:
   - hold TTL with `expiresAt`
   - periodic expired-hold release
 - Realtime seat updates are broadcast through Socket.IO + Redis pub/sub
-- Booking flow does payment then confirms held seat
+- Booking flow screens payment with fraud detection, charges the payment service, then confirms the held seat
+- Payment service exposes a demo charge adapter and requires the fraud service by default
 
 ## Environment files
 

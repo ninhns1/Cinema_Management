@@ -76,18 +76,18 @@ async function payBooking({ env, bookingId, userId }) {
   }
 
   try {
+    const payment = await axios.post(`${env.paymentServiceBaseUrl}/api/payments/charge`, {
+      bookingId,
+      amount: booking.totalAmount,
+      userId,
+    });
+
     for (const holdId of booking.holdIds) {
       await axios.post(`${env.seatServiceBaseUrl}/api/seats/confirm`, {
         holdId,
         userId,
       });
     }
-
-    const payment = await axios.post(`${env.paymentServiceBaseUrl}/api/payments/charge`, {
-      bookingId,
-      amount: booking.totalAmount,
-      userId,
-    });
 
     booking.bookingStatus = "BOOKED";
     booking.paymentStatus = "PAID";
