@@ -16,6 +16,10 @@ export function PaymentModal({ booking, userId, onClose, onPaid }) {
         userId,
         paymentMethod,
       });
+      if (response.data.paymentUrl) {
+        window.location.assign(response.data.paymentUrl);
+        return;
+      }
       onPaid(response.data);
       onClose();
     } catch (apiError) {

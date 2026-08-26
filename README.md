@@ -50,6 +50,11 @@ From `fraud-detection` folder:
 - `python -m pip install -r requirements.txt`
 - `uvicorn main:app --host 0.0.0.0 --port 8000`
 
+Start the fraud service before accepting payments. The payment service calls it at
+`FRAUD_DETECTION_URL` and rejects the payment when the risk score reaches
+`FRAUD_THRESHOLD`. If the fraud service is unavailable, payments are blocked by
+default (`FRAUD_DETECTION_REQUIRED=true`).
+
 ## Implemented architecture
 
 - Authentication is provided by the booking-order service with `/api/auth/register` and `/api/auth/login` routes.
@@ -63,7 +68,40 @@ From `fraud-detection` folder:
   - periodic expired-hold release
 - Realtime seat updates are broadcast through Socket.IO + Redis pub/sub
 - Booking flow screens payment with fraud detection, charges the payment service, then confirms the held seat
-- Payment service exposes a demo charge adapter and requires the fraud service by default
+- Card and e-wallet payments create a signed VNPay sandbox redirect URL after fraud screening
+- VNPay IPN verifies the HMAC-SHA512 signature and finalizes the booking only after a successful response
+- Cash payments are recorded as completed at the counter
+- Refunds are idempotent in the payment service demo adapter
+
+## Payment configuration
+
+Copy the example environment files and set the same internal callback secret in
+both booking-order and payment services:
+
+```env
+FRAUD_DETECTION_URL=http://localhost:8000
+FRAUD_DETECTION_REQUIRED=true
+FRAUD_THRESHOLD=0.5
+VNP_TMN_CODE=your_vnpay_sandbox_terminal_code
+VNP_HASH_SECRET=your_vnpay_sandbox_hash_secret
+VNP_URL=https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+VNP_RETURN_URL=https://your-public-host/api/payments/vnpay-return
+VNP_IPN_URL=https://your-public-host/api/payments/vnpay-ipn
+FRONTEND_RETURN_URL=http://localhost:5173/payment-result
+BOOKING_SERVICE_BASE_URL=http://localhost:4003
+INTERNAL_CALLBACK_SECRET=the-same-secret-in-both-services
+```
+
+For local VNPay testing, `VNP_IPN_URL` must be reachable from the internet.
+Use a tunnel such as ngrok and configure its HTTPS URL in the VNPay sandbox
+dashboard. Never commit merchant credentials or real payment secrets.
+
+Payment endpoints:
+
+- `POST /api/bookings/pay`: starts payment for a held booking
+- `GET /api/payments/vnpay-return`: validates the browser return and redirects to the frontend
+- `GET /api/payments/vnpay-ipn`: validates VNPay server notification and finalizes the booking
+- `POST /api/payments/refund`: creates an idempotent refund record in the demo adapter
 
 ## Environment files
 

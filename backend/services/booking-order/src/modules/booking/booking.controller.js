@@ -1,9 +1,22 @@
 const express = require("express");
-const { createBooking, payBooking, listBookings, cancelBooking, getAdminStats } = require("./booking.service");
+const { createBooking, payBooking, confirmVnpayPayment, listBookings, cancelBooking, getAdminStats } = require("./booking.service");
 const { requireAuth, requireAdmin } = require("../../middleware/auth");
 
 function createBookingRouter(env) {
   const router = express.Router();
+
+  router.post("/payment/vnpay-confirm", async (req, res) => {
+    if (req.get("X-Internal-Secret") !== env.internalCallbackSecret) {
+      return res.status(401).json({ error: "UNAUTHORIZED_CALLBACK" });
+    }
+    try {
+      const result = await confirmVnpayPayment({ env, ...req.body });
+      return res.json(result);
+    } catch (error) {
+      return res.status(error.message === "BOOKING_NOT_FOUND" ? 404 : 409).json({ error: error.message });
+    }
+  });
+
   router.use(requireAuth(env));
 
   router.post("/create", async (req, res) => {

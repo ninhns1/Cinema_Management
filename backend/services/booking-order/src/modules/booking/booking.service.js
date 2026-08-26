@@ -103,6 +103,13 @@ async function payBooking({ env, bookingId, userId, paymentMethod }) {
       paymentMethod,
     });
 
+    booking.paymentRef = payment.data.paymentRef;
+    booking.paymentMethod = payment.data.paymentMethod;
+    if (payment.data.status === "PENDING") {
+      await booking.save();
+      return { ...booking.toObject(), paymentUrl: payment.data.paymentUrl };
+    }
+
     for (const holdId of booking.holdIds) {
       await axios.post(`${env.seatServiceBaseUrl}/api/seats/confirm`, {
         holdId,
@@ -126,6 +133,26 @@ async function payBooking({ env, bookingId, userId, paymentMethod }) {
 
 async function listBookings({ userId }) {
   return Booking.find({ userId }).sort({ createdAt: -1 }).lean();
+}
+
+async function confirmVnpayPayment({ env, bookingId, paymentRef, paymentMethod }) {
+  const booking = await Booking.findOne({ bookingId });
+  if (!booking) throw new Error("BOOKING_NOT_FOUND");
+  if (booking.paymentStatus === "PAID") return booking;
+  if (booking.paymentRef !== paymentRef) throw new Error("PAYMENT_REFERENCE_MISMATCH");
+
+  for (const holdId of booking.holdIds) {
+    await axios.post(`${env.seatServiceBaseUrl}/api/seats/confirm`, {
+      holdId,
+      userId: booking.userId,
+    });
+  }
+
+  booking.bookingStatus = "BOOKED";
+  booking.paymentStatus = "PAID";
+  booking.paymentMethod = paymentMethod || booking.paymentMethod;
+  await booking.save();
+  return booking;
 }
 
 async function cancelBooking({ env, bookingId, userId }) {
@@ -184,4 +211,11 @@ async function getAdminStats() {
   return summary || { totalBookings: 0, paidBookings: 0, revenue: 0 };
 }
 
-module.exports = { createBooking, payBooking, listBookings, cancelBooking, getAdminStats };
+module.exports = {
+  createBooking,
+  payBooking,
+  confirmVnpayPayment,
+  listBookings,
+  cancelBooking,
+  getAdminStats,
+};
