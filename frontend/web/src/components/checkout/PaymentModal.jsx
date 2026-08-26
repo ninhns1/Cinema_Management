@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { bookingApi } from "../../services/apiClient";
+import { bookingApi } from "../../services/apiClientFixed";
 
 export function PaymentModal({ booking, userId, onClose, onPaid }) {
   const [submitting, setSubmitting] = useState(false);
@@ -30,19 +30,38 @@ export function PaymentModal({ booking, userId, onClose, onPaid }) {
   }
 
   return (
-    <div className="modal-backdrop" role="dialog" aria-modal="true" onClick={onClose}>
-      <div className="payment-modal" onClick={(event) => event.stopPropagation()}>
+    <div
+      className="modal-backdrop"
+      role="dialog"
+      aria-modal="true"
+      onClick={onClose}
+    >
+      <div
+        className="payment-modal"
+        onClick={(event) => event.stopPropagation()}
+      >
         <button type="button" className="close-btn" onClick={onClose}>
           x
         </button>
         <p className="section-kicker">Payment</p>
         <h2>Confirm payment</h2>
         <div className="payment-summary">
-          <p><strong>Movie:</strong> {booking.movieTitle}</p>
-          <p><strong>Time:</strong> {booking.showtimeLabel}</p>
-          <p><strong>Seats:</strong> {booking.seatIds.join(", ")}</p>
-          <p><strong>Total:</strong> {booking.totalAmount.toLocaleString("vi-VN")} VND</p>
-          <p><strong>Status:</strong> {booking.paymentStatus}</p>
+          <p>
+            <strong>Movie:</strong> {booking.movieTitle}
+          </p>
+          <p>
+            <strong>Time:</strong> {booking.showtimeLabel}
+          </p>
+          <p>
+            <strong>Seats:</strong> {booking.seatIds.join(", ")}
+          </p>
+          <p>
+            <strong>Total:</strong>{" "}
+            {booking.totalAmount.toLocaleString("vi-VN")} VND
+          </p>
+          <p>
+            <strong>Status:</strong> {booking.paymentStatus}
+          </p>
         </div>
 
         {error ? <p className="error-text">{error}</p> : null}

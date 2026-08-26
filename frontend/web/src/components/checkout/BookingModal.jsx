@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { bookingApi, seatApi } from "../../services/apiClient";
+import { bookingApi, seatApi } from "../../services/apiClientFixed";
 import { seatSocket } from "../../services/seatRealtime";
 import { SeatPickerGrid } from "../seat-map/SeatPickerGrid";
 import { SeatGridSkeleton } from "../seat-map/SeatGridSkeleton";
@@ -153,11 +153,16 @@ export function BookingModal({ movie, userId, onClose, onPaymentSuccess }) {
       setPendingBooking(response.data);
     } catch (apiError) {
       if (!apiError.response) {
-        setError("Cannot connect to booking services. Please start backend services and try again.");
+        setError(
+          "Cannot connect to booking services. Please start backend services and try again.",
+        );
       } else if (apiError.response.data?.error?.error) {
         setError(apiError.response.data.error.error);
       } else {
-        setError(apiError.response.data?.error || "Seat is no longer available. Please choose another one.");
+        setError(
+          apiError.response.data?.error ||
+            "Seat is no longer available. Please choose another one.",
+        );
       }
     } finally {
       setSubmitting(false);
@@ -174,8 +179,16 @@ export function BookingModal({ movie, userId, onClose, onPaymentSuccess }) {
   const estimatedTotal = selectedSeats.length * 120000;
 
   return (
-    <div className="modal-backdrop" role="dialog" aria-modal="true" onClick={onClose}>
-      <div className="booking-modal" onClick={(event) => event.stopPropagation()}>
+    <div
+      className="modal-backdrop"
+      role="dialog"
+      aria-modal="true"
+      onClick={onClose}
+    >
+      <div
+        className="booking-modal"
+        onClick={(event) => event.stopPropagation()}
+      >
         <button type="button" className="close-btn" onClick={onClose}>
           x
         </button>
@@ -212,10 +225,18 @@ export function BookingModal({ movie, userId, onClose, onPaymentSuccess }) {
         )}
 
         <div className="seat-legend">
-          <span><i className="legend-dot available" /> Available</span>
-          <span><i className="legend-dot selected" /> Selected</span>
-          <span><i className="legend-dot held" /> Held</span>
-          <span><i className="legend-dot booked" /> Booked</span>
+          <span>
+            <i className="legend-dot available" /> Available
+          </span>
+          <span>
+            <i className="legend-dot selected" /> Selected
+          </span>
+          <span>
+            <i className="legend-dot held" /> Held
+          </span>
+          <span>
+            <i className="legend-dot booked" /> Booked
+          </span>
         </div>
 
         {error ? <p className="error-text">{error}</p> : null}

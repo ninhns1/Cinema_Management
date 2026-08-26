@@ -22,15 +22,21 @@ export function getRefreshToken() {
 }
 
 export function setAuthSession(user, accessToken, refreshToken) {
-  localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
-  localStorage.setItem(AUTH_TOKEN_KEY, accessToken);
-  if (refreshToken) localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+  try {
+    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+    localStorage.setItem(AUTH_TOKEN_KEY, accessToken);
+    if (refreshToken) localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+  } catch (_e) {
+    // ignore storage errors
+  }
 }
 
 export function clearAuthSession() {
-  localStorage.removeItem(USER_STORAGE_KEY);
-  localStorage.removeItem(AUTH_TOKEN_KEY);
-  localStorage.removeItem(REFRESH_TOKEN_KEY);
+  try {
+    localStorage.removeItem(USER_STORAGE_KEY);
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
+  } catch (_e) {}
 }
 
 export const authApi = axios.create({
@@ -103,5 +109,5 @@ bookingApi.interceptors.response.use(
     }
 
     return Promise.reject(err);
-  }
+  },
 );

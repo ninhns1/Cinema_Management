@@ -28,11 +28,11 @@
 3. Install frontend dependencies:
    - `cd ../frontend/web`
    - `npm install`
-   
 
 ## Run services
 
 From `backend` folder:
+
 - `npm run dev`
 
 - `npm run dev:seat`
@@ -52,6 +52,8 @@ From `fraud-detection` folder:
 
 ## Implemented architecture
 
+- Authentication is provided by the booking-order service with `/api/auth/register` and `/api/auth/login` routes.
+- User accounts are stored in MongoDB `users` collection with password hash values.
 - Seat Management Service is the central source of truth for seat state
 - POS/Sales Service is a separate entry service for counters/agencies/apps
 - Hold seat flow includes:
