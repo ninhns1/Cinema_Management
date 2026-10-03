@@ -29,6 +29,12 @@
    - `cd ../frontend/web`
    - `npm install`
 
+## Deployment
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for Vercel frontend and Render API
+deployment steps, including required environment variables and managed database
+setup.
+
 ## Run services
 
 From `backend` folder:

@@ -1,5 +1,8 @@
 import { io } from "socket.io-client";
 
-export const seatSocket = io("http://localhost:4001", {
+const seatSocketUrl =
+  import.meta.env.VITE_SEAT_SOCKET_URL || "http://localhost:4001";
+
+export const seatSocket = io(seatSocketUrl, {
   autoConnect: true,
 });

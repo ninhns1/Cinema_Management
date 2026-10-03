@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { io } from "socket.io-client";
 import { seatApi } from "../../services/apiClientFixed";
 
-const socket = io("http://localhost:4001");
+const seatSocketUrl =
+  import.meta.env.VITE_SEAT_SOCKET_URL || "http://localhost:4001";
+const socket = io(seatSocketUrl);
 
 function normalizeStatus(status) {
   if (!status) return "available";

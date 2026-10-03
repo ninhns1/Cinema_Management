@@ -4,6 +4,13 @@ const AUTH_TOKEN_KEY = "cinema_access_token";
 const USER_STORAGE_KEY = "cinema_user";
 const REFRESH_TOKEN_KEY = "cinema_refresh_token";
 
+const bookingServiceUrl =
+  import.meta.env.VITE_BOOKING_API_URL || "http://localhost:4003";
+const seatServiceUrl =
+  import.meta.env.VITE_SEAT_API_URL || "http://localhost:4001";
+const catalogServiceUrl =
+  import.meta.env.VITE_CATALOG_API_URL || "http://localhost:4006";
+
 export function getStoredUser() {
   try {
     const raw = localStorage.getItem(USER_STORAGE_KEY);
@@ -34,19 +41,19 @@ export function clearAuthSession() {
 }
 
 export const authApi = axios.create({
-  baseURL: "http://localhost:4003/api/auth",
+  baseURL: `${bookingServiceUrl}/api/auth`,
 });
 
 export const seatApi = axios.create({
-  baseURL: "http://localhost:4001/api/seats",
+  baseURL: `${seatServiceUrl}/api/seats`,
 });
 
 export const bookingApi = axios.create({
-  baseURL: "http://localhost:4003/api/bookings",
+  baseURL: `${bookingServiceUrl}/api/bookings`,
 });
 
 export const catalogApi = axios.create({
-  baseURL: "http://localhost:4006/api/catalog",
+  baseURL: `${catalogServiceUrl}/api/catalog`,
 });
 
 catalogApi.interceptors.request.use((config) => {

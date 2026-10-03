@@ -1,15 +1,5 @@
 import { useState } from "react";
-import axios from "axios";
-
-function setAuthSession(user, accessToken, refreshToken) {
-  try {
-    localStorage.setItem("cinema_user", JSON.stringify(user));
-    localStorage.setItem("cinema_access_token", accessToken);
-    if (refreshToken) localStorage.setItem("cinema_refresh_token", refreshToken);
-  } catch (_e) {
-    // ignore storage errors
-  }
-}
+import { authApi, setAuthSession } from "../services/apiClientFixed";
 
 const defaultForm = {
   fullName: "",
@@ -41,7 +31,7 @@ export function AuthModal({ onClose, onAuthSuccess }) {
       const payload = mode === "register" ? form : { email: form.email, password: form.password };
       if (mode === "forgot") {
         if (resetRequested) {
-          const response = await axios.post("http://localhost:4003/api/auth/reset-password", {
+          const response = await authApi.post("/reset-password", {
             resetToken,
             newPassword: form.password,
           });
@@ -49,15 +39,15 @@ export function AuthModal({ onClose, onAuthSuccess }) {
           setAuthSession(data.user, data.accessToken, data.refreshToken);
           onAuthSuccess(data.user);
         } else {
-          const response = await axios.post("http://localhost:4003/api/auth/forgot-password", { email: form.email });
+          const response = await authApi.post("/forgot-password", { email: form.email });
           setResetMessage(response.data.message || "A reset code has been sent to your email.");
           setResetRequested(true);
         }
         return;
       }
 
-      const url = mode === "register" ? "http://localhost:4003/api/auth/register" : "http://localhost:4003/api/auth/login";
-      const response = await axios.post(url, payload);
+      const endpoint = mode === "register" ? "/register" : "/login";
+      const response = await authApi.post(endpoint, payload);
       const data = response.data;
       // data: { user, accessToken, refreshToken }
       setAuthSession(data.user, data.accessToken, data.refreshToken);
