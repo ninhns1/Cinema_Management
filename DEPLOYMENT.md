@@ -18,9 +18,13 @@ command, and use the listed start command. Each service uses Node.
 | `cinema-payment` | `node services/payment/src/server.js` | `/health` |
 | `cinema-catalog` | `node services/catalog/src/server.js` | `/health` |
 
-Give every service its own MongoDB Atlas database URI as appropriate. Configure
-the environment variables using the service's `.env.example`; do not copy
-example passwords or development secrets into production.
+Give every service that uses MongoDB its own MongoDB Atlas database URI.
+In Render, open the `cinema-catalog` service, go to **Environment**, and add
+`MONGO_URI` with that service's MongoDB Atlas connection string (including the
+database name, for example `cinema_catalog`). Set it in the Render dashboard,
+not in `.env.example` or source control. Configure the other environment
+variables using each service's `.env.example`; do not copy example passwords
+or development secrets into production.
 
 Set the service-to-service URLs to the deployed Render HTTPS URLs:
 
